@@ -1,400 +1,888 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-
-<title>WAR-CORE ULTIMATE</title>
-
-<style>
-html,body{
-margin:0;
-height:100%;
-background:#000;
-overflow:hidden;
-font-family:system-ui;
-}
-
-canvas{display:block}
-
-/* admin */
-#panel{
-position:fixed;
-top:0;
-left:0;
-right:0;
-background:#050505ee;
-border-bottom:2px solid #600;
-padding:10px;
-transform:translateY(-110%);
-transition:.25s;
-z-index:9999;
-}
-
-body.admin #panel{
-transform:translateY(0);
-}
-
-textarea{
-width:60%;
-height:80px;
-background:#000;
-color:#fff;
-border:1px solid #222;
-}
-
-button{
-background:#111;
-color:#fff;
-border:1px solid #333;
-padding:8px;
-cursor:pointer;
-}
-
-#secret{
-position:fixed;
-bottom:0;
-left:0;
-width:50px;
-height:50px;
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <title>WAR-CORE V20 [Ultima] - Enhanced</title>
+  <meta id="meta-desc" name="description" content="Secure Data Matrix - Loading Payload..." />
+  <meta property="og:title" content="WAR-CORE V20 [Ultima] - Enhanced" />
+  <meta id="og-desc" property="og:description" content="Secure Data Matrix - Loading Payload..." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#000;
+      --matrix-color:#ff2b2b; /* Default Matrix Red */
+      --panel-bg:rgba(6,6,6,0.94);
+      --panel-border:var(--matrix-color);
+      --ui-z:9999;
+      --font: "Orbitron", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    }
+    html,body{height:100%;width:100%;margin:0;padding:0;background:var(--bg);overflow:hidden;font-family:var(--font);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; touch-action:manipulation; color:#fff;}
+    canvas#c{display:block;width:100%;height:100%;background:var(--bg);}
+    /* Admin panel */
+    #ui-layer{position:fixed;top:0;left:0;right:0;z-index:var(--ui-z);transform:translateY(-110%);transition:transform .28s ease;background:var(--panel-bg);border-bottom:2px solid var(--panel-border);padding:12px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-sizing:border-box;}
+    body.admin-mode #ui-layer{transform:translateY(0)}
+    #ui-row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+    textarea#msg-input{flex:1 1 580px;min-width:200px;height:100px;resize:none;background:#080808;color:#fff;border:1px solid #222;padding:10px;font-size:13px;border-radius:6px;direction:ltr;text-align:left}
+    .controls{display:flex;flex-direction:column;gap:8px}
+    button,select,input[type="file"]{background:#0e0e0e;color:#fff;border:1px solid #2b2b2b;padding:10px 12px;border-radius:6px;cursor:pointer;font-weight:700;height:44px}
+    button.primary{background:var(--matrix-color);border-color:darken(var(--matrix-color), 10%);}
+    #secret-trigger{position:fixed;bottom:0;left:0;width:50px;height:50px;z-index:10000;background:transparent;touch-action:manipulation}
+    #readable-content{position:absolute;left:8px;top:8px;width:calc(100% - 16px);max-height:1px;overflow:hidden;white-space:pre-wrap;opacity:0.3;pointer-events:none;user-select:text;z-index:-10;color:transparent}
+    #error-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10001;pointer-events:none;background:rgba(0,0,0,0.8);}
+    #error-overlay.show{display:flex}
+    #error-overlay-content{text-align:center;}
+    #error-overlay-content h2{font-size:32px;font-weight:900;color:var(--matrix-color);text-shadow:0 0 12px rgba(255,0,0,0.5);margin-bottom:10px;}
+    #error-overlay-content p{font-size:16px;color:#ccc;}
+    #loading-indicator{position:fixed;top:12px;left:12px;z-index:10002;display:flex;gap:6px;align-items:center;pointer-events:none}
+    .dot{width:8px;height:8px;border-radius:50%;background:#bbb;opacity:.12;animation:dotPulse 1s infinite}
+    .dot:nth-child(2){animation-delay:.15s}
+    .dot:nth-child(3){animation-delay:.3s}
+    @keyframes dotPulse{0%{opacity:.12;transform:translateY(0)}50%{opacity:.9;transform:translateY(-6px)}100%{opacity:.12;transform:translateY(0)}}
+    /* small responsive */
+    @media (max-width:768px){textarea#msg-input{height:130px;flex-basis:100%}.controls{flex-direction:row;gap:6px}}
+    /* visually hidden status for screen readers */
+    .sr-only{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .flex-row-wrap { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+    .label-group { display: flex; gap: 8px; align-items: center; }
+    .label-group span { font-weight: 800; color: #ddd; }
+    #countdown-timer { font-size: 14px; color: #0f0; margin-left: 10px; }
+    #battery-status { font-size: 14px; color: #0ff; margin-left: 10px; }
+  </style>
 </head>
 <body>
 
-<div id="panel">
-<textarea id="msg"></textarea>
-<button id="fetch">FETCH</button>
-<button id="gridBtn">GRID</button>
-<button id="voidBtn">VOID</button>
-<input type="file" id="img">
-</div>
+  <div id="ui-layer" aria-hidden="true">
+    <div id="ui-row">
+      <textarea id="msg-input" placeholder="البيانات من Gist ستظهر هنا..." aria-label="نص Gist الخام"></textarea>
+      <div class="controls" aria-hidden="false">
+        <button id="btn-update" class="primary" title="جلب يدوي من RAW">تحديث يدوي من RAW</button>
+        <button id="btn-copy-raw" title="نسخ RAW URL">نسخ RAW URL</button>
+        <button id="btn-copy-link" title="نسخ رابط الصفحة">نسخ رابط الصفحة</button>
+      </div>
+    </div>
 
-<div id="secret"></div>
+    <div class="flex-row-wrap">
+      <label class="label-group">
+        <span>خلفية:</span>
+        <select id="bg-select" aria-label="اختيار خلفية">
+          <option value="void">Void (أسود)</option>
+          <option value="grid">Grid (شبكة)</option>
+          <option value="image">Image (صورة)</option>
+        </select>
+      </label>
 
-<canvas id="c"></canvas>
+      <label class="label-group">
+        <span>السمة:</span>
+        <select id="theme-select" aria-label="اختيار السمة اللونية">
+          <option value="red">Matrix Red</option>
+          <option value="green">Neon Green</option>
+          <option value="blue">Cyber Blue</option>
+          <option value="purple">Techno Purple</option>
+        </select>
+      </label>
+
+      <label class="label-group">
+        <span>الخط:</span>
+        <select id="font-select" aria-label="اختيار الخط">
+          <option value="orbitron">Orbitron</option>
+          <option value="sharetechmono">Share Tech Mono</option>
+          <option value="segoeui">Segoe UI</option>
+        </select>
+      </label>
+
+      <label class="label-group">
+        <span>رفع صورة:</span>
+        <input id="img-uploader" type="file" accept="image/*" aria-label="رفع صورة للخلفية"/>
+      </label>
+
+      <button id="btn-clear-image" title="مسح الصورة">مسح الصورة</button>
+      <button id="btn-clear-all" title="مسح البيانات المحفوظة">مسح البيانات</button>
+    </div>
+  </div>
+
+  <div id="readable-content" role="article" aria-live="polite">WAR-CORE SYSTEM INITIALIZING... WAITING FOR GIST PAYLOAD.</div>
+
+  <div id="secret-trigger" role="button" aria-label="مشغّل إدارة سري"></div>
+
+  <canvas id="c" aria-label="عرض WAR-CORE"></canvas>
+
+  <div id="error-overlay" aria-hidden="true">
+    <div id="error-overlay-content">
+      <h2>CONNECTION LOST</h2>
+      <p id="error-message">فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت أو تحديث الصفحة يدوياً.</p>
+      <button id="btn-retry-fetch" class="primary" style="margin-top: 20px;">إعادة المحاولة</button>
+    </div>
+  </div>
+
+  <div id="loading-indicator" aria-hidden="true">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    <span id="countdown-timer"></span>
+    <span id="battery-status"></span>
+  </div>
+
+  <div class="sr-only" role="status" id="aria-status">جاهز</div>
 
 <script>
-"use strict";
+/* WAR-CORE V20 - Single-file (Vanilla JS) - Enhanced Edition
+   - Implements Blueprint + improvements:
+     AbortController + timeout + retry, debounced resize,
+     DPR cap, desynchronized ctx fallback, offscreen grid,
+     objectURL for images, small-image localStorage, scanlines,
+     chromatic aberration, accessibility layer.
+   - Enhancements:
+     Dynamic Themes, Digital Glitch effect, Floating Particles,
+     Offline Cache (Service Worker), Custom Google Fonts,
+     Advanced Status Indicators (Countdown, Battery),
+     Smarter Error Handling with retry option.
+*/
 
-/* =====================
-   CONSTANTS
-===================== */
+/* ---------- Constants & State ---------- */
+const RAW_URL = "https://gist.githubusercontent.com/tombad8900/02c19d224a9d2cafc91bf918c81e27a6/raw/";
+const FETCH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const FETCH_TIMEOUT_MS = 15 * 1000; // 15 seconds
+const MAX_IMAGE_STORE_BYTES = 800_000; // store inline only if smaller (~800KB)
+const IMAGE_SIZE_LIMIT_BYTES = 10 * 1024 * 1024; // 10MB absolute limit for upload
+const DPR_MAX = 2;
 
-const RAW_URL="https://gist.githubusercontent.com/tombad8900/02c19d224a9d2cafc91bf918c81e27a6/raw/";
-const DPR_MAX=2;
+const THEMES = {
+  red: { color: '#ff2b2b', border: '#6b0000' },
+  green: { color: '#00ff00', border: '#006b00' },
+  blue: { color: '#00aaff', border: '#0055aa' },
+  purple: { color: '#aa00ff', border: '#5500aa' }
+};
 
-const canvas=document.getElementById("c");
-const ctx=canvas.getContext("2d",{alpha:false,desynchronized:true}) || canvas.getContext("2d");
+const FONTS = {
+  orbitron: '"Orbitron", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif',
+  sharetechmono: '"Share Tech Mono", monospace',
+  segoeui: '"Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif'
+};
 
-let back=document.createElement("canvas");
-let bctx=back.getContext("2d");
+const canvas = document.getElementById('c');
+let ctx = null;
+let rAFid = null;
+let fetchTimerId = null;
+let gridCache = null;
+let particles = [];
+const NUM_PARTICLES = 50;
 
-/* =====================
-   STATE
-===================== */
+const msgInput = document.getElementById('msg-input');
+const readableLayer = document.getElementById('readable-content');
+const errorOverlay = document.getElementById('error-overlay');
+const errorMessage = document.getElementById('error-message');
+const loadingIndicator = document.getElementById('loading-indicator');
+const ariaStatus = document.getElementById('aria-status');
+const countdownTimer = document.getElementById('countdown-timer');
+const batteryStatus = document.getElementById('battery-status');
 
-let w=0,h=0,dpr=1;
+const btnUpdate = document.getElementById('btn-update');
+const btnCopyRaw = document.getElementById('btn-copy-raw');
+const btnCopyLink = document.getElementById('btn-copy-link');
+const imgUploader = document.getElementById('img-uploader');
+const bgSelect = document.getElementById('bg-select');
+const themeSelect = document.getElementById('theme-select');
+const fontSelect = document.getElementById('font-select');
+const btnClearImage = document.getElementById('btn-clear-image');
+const btnClearAll = document.getElementById('btn-clear-all');
+const secretTrigger = document.getElementById('secret-trigger');
+const btnRetryFetch = document.getElementById('btn-retry-fetch');
 
-let grid,scan,noise;
-let matrixDrops=[];
-let lines=["WAR-CORE ACTIVE"];
+let dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+let w = window.innerWidth, h = window.innerHeight;
+let lines = [];
+let lastFetchOK = true;
+let inFlightFetch = null; // AbortController
+let retryCount = 0;
+let glitchIntensity = 0;
+let gridOffset = 0;
+let bgMode = localStorage.getItem('warcore_bg') || 'void';
+let currentTheme = localStorage.getItem('warcore_theme') || 'red';
+let currentFont = localStorage.getItem('warcore_font') || 'orbitron';
+let uploadedImage = null; // {img:Image, objectUrl, storedDataUrl?}
+let imageLoaded = false;
+let fetchScheduled = false;
+let resizeTimer = null;
+let inited = false;
+let lastFetchTime = nowMs();
+let animationFrameRate = 60; // Default FPS
 
-let bgMode="grid";
-let uploadedImg=null;
-
-let glitch=0;
-let raf;
-let last=performance.now();
-
-/* =====================
-   RESIZE
-===================== */
-
-function resize(){
-
-dpr=Math.min(devicePixelRatio||1,DPR_MAX);
-
-w=innerWidth;
-h=innerHeight;
-
-canvas.width=w*dpr;
-canvas.height=h*dpr;
-
-canvas.style.width=w+"px";
-canvas.style.height=h+"px";
-
-back.width=w;
-back.height=h;
-
-ctx.setTransform(dpr,0,0,dpr,0,0);
-
-buildGrid();
-buildScan();
-buildNoise();
-initMatrix();
+/* ---------- Service Worker Registration ---------- */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').then(registration => {
+      console.log('ServiceWorker registration successful with scope: ', registration.scope);
+    }).catch(err => {
+      console.log('ServiceWorker registration failed: ', err);
+    });
+  });
 }
 
-addEventListener("resize",debounce(resize,120));
+/* ---------- Utility ---------- */
+function setStatus(text){
+  ariaStatus.textContent = text;
+}
+function safeTextForMeta(text){
+  return (text||'').replace(/[<>]/g,'');
+}
+function nowMs(){ return (performance && performance.now) ? performance.now() : Date.now(); }
 
-/* =====================
-   CACHES
-===================== */
-
-function buildGrid(){
-
-grid=document.createElement("canvas");
-grid.width=w;
-grid.height=h;
-
-const g=grid.getContext("2d");
-
-const spacing=Math.max(20,Math.min(w,h)*0.04);
-
-g.strokeStyle="rgba(0,255,120,.05)";
-
-for(let x=0;x<w;x+=spacing){
-g.beginPath();
-g.moveTo(x,0);
-g.lineTo(x,h);
-g.stroke();
+function applyTheme(themeName) {
+  const theme = THEMES[themeName];
+  if (theme) {
+    document.documentElement.style.setProperty('--matrix-color', theme.color);
+    document.documentElement.style.setProperty('--panel-border', theme.border);
+    currentTheme = themeName;
+    try { localStorage.setItem('warcore_theme', themeName); } catch(e) { console.warn('Failed to save theme', e); }
+  }
 }
 
-for(let y=0;y<h;y+=spacing){
-g.beginPath();
-g.moveTo(0,y);
-g.lineTo(w,y);
-g.stroke();
-}
-}
-
-function buildScan(){
-
-scan=document.createElement("canvas");
-scan.width=w;
-scan.height=h;
-
-const s=scan.getContext("2d");
-
-s.fillStyle="rgba(0,0,0,.08)";
-
-for(let y=0;y<h;y+=4){
-s.fillRect(0,y,w,1);
-}
+function applyFont(fontName) {
+  const font = FONTS[fontName];
+  if (font) {
+    document.documentElement.style.setProperty('--font', font);
+    currentFont = fontName;
+    try { localStorage.setItem('warcore_font', fontName); } catch(e) { console.warn('Failed to save font', e); }
+  }
 }
 
-function buildNoise(){
-
-noise=document.createElement("canvas");
-noise.width=220;
-noise.height=220;
-
-const n=noise.getContext("2d");
-const img=n.createImageData(220,220);
-
-for(let i=0;i<img.data.length;i+=4){
-const v=Math.random()*255;
-img.data[i]=v;
-img.data[i+1]=v;
-img.data[i+2]=v;
-img.data[i+3]=12;
+/* ---------- Canvas & DPR ---------- */
+function initContext(){
+  // try to create desynchronized context with alpha=false; fallback gracefully
+  ctx = canvas.getContext('2d', { alpha:false, desynchronized:true }) || canvas.getContext('2d', { alpha:false }) || canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+}
+function resizeCanvasDebounced(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    resizeCanvas();
+    rebuildGridCache();
+    initParticles(); // Reinitialize particles on resize
+  }, 110);
+}
+function resizeCanvas(){
+  dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+  w = window.innerWidth;
+  h = window.innerHeight;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  if (typeof ctx.setTransform === 'function'){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  } else {
+    ctx.scale(dpr, dpr);
+  }
 }
 
-n.putImageData(img,0,0);
+/* ---------- Offscreen Grid Cache ---------- */
+function rebuildGridCache(){
+  // create an offscreen canvas sized to CSS pixels (w,h)
+  gridCache = document.createElement('canvas');
+  gridCache.width = Math.max(1, Math.floor(w));
+  gridCache.height = Math.max(1, Math.floor(h));
+  const gctx = gridCache.getContext('2d');
+  const spacing = Math.max(18, Math.round(Math.min(w,h) * 0.04));
+  gctx.clearRect(0,0,gridCache.width,gridCache.height);
+  gctx.strokeStyle = 'rgba(0,170,60,0.06)';
+  gctx.lineWidth = 1;
+  gctx.beginPath();
+  for (let x = 0; x < gridCache.width; x += spacing){
+    gctx.moveTo(x + 0.5, 0);
+    gctx.lineTo(x + 0.5, gridCache.height);
+  }
+  for (let y = 0; y < gridCache.height; y += spacing){
+    gctx.moveTo(0, y + 0.5);
+    gctx.lineTo(gridCache.width, y + 0.5);
+  }
+  gctx.stroke();
+  // subtle glow
+  const grad = gctx.createRadialGradient(gridCache.width*0.75, gridCache.height*0.25, 0, gridCache.width*0.75, gridCache.height*0.25, Math.max(gridCache.width, gridCache.height));
+  grad.addColorStop(0, 'rgba(0,255,120,0.02)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  gctx.fillStyle = grad;
+  gctx.fillRect(0,0,gridCache.width,gridCache.height);
 }
 
-/* =====================
-   MATRIX
-===================== */
-
-function initMatrix(){
-
-matrixDrops=[];
-
-const font=16;
-
-for(let i=0;i<w/font;i++){
-matrixDrops[i]=Math.random()*-h;
-}
-}
-
-function drawMatrix(ctx){
-
-const font=16;
-ctx.font=`${font}px monospace`;
-ctx.fillStyle="rgba(0,200,0,.75)";
-
-for(let i=0;i<matrixDrops.length;i++){
-
-const x=i*font;
-const y=matrixDrops[i];
-
-ctx.fillText(Math.random()>.5?"0":"1",x,y);
-
-if(y>h && Math.random()>.975)
-matrixDrops[i]=0;
-
-matrixDrops[i]+=1.2;
-}
+/* ---------- Particles Effect ---------- */
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < NUM_PARTICLES; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      size: Math.random() * 1.5 + 0.5,
+      speedX: (Math.random() - 0.5) * 0.5,
+      speedY: (Math.random() - 0.5) * 0.5,
+      opacity: Math.random() * 0.5 + 0.1
+    });
+  }
 }
 
-/* =====================
-   TEXT
-===================== */
+function drawParticles() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (let i = 0; i < NUM_PARTICLES; i++) {
+    const p = particles[i];
+    ctx.globalAlpha = p.opacity;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
 
-function drawText(ctx){
+    p.x += p.speedX;
+    p.y += p.speedY;
 
-if(!lines.length) return;
-
-let fs=Math.min(w*.12,(h*.8)/(lines.length*1.2));
-ctx.font=`900 ${Math.floor(fs)}px system-ui`;
-
-let widest=0;
-
-for(const l of lines){
-widest=Math.max(widest,ctx.measureText(l).width);
+    if (p.x < 0 || p.x > w) p.speedX *= -1;
+    if (p.y < 0 || p.y > h) p.speedY *= -1;
+  }
+  ctx.restore();
 }
 
-if(widest>w*.9){
-fs*=w*.9/widest;
-ctx.font=`900 ${Math.floor(fs)}px system-ui`;
+/* ---------- Fetch with Timeout + Retry ---------- */
+async function fetchWithTimeout(url, timeoutMs=FETCH_TIMEOUT_MS, signal=null){
+  const controller = new AbortController();
+  const combinedSignal = signal ? signal : controller.signal;
+  const timer = setTimeout(()=> controller.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, { cache:'no-store', signal: combinedSignal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('Network response not ok');
+    return await res.text();
+  } catch(e){
+    clearTimeout(timer);
+    throw e;
+  }
+}
+async function fetchPayload(manual=false){
+  if (inFlightFetch) {
+    // avoid overlapping fetches
+    setStatus('إلغاء الطلب السابق وإعادة الجلب');
+    try { inFlightFetch.abort(); } catch(_) {}
+  }
+  inFlightFetch = new AbortController();
+  loadingIndicator.style.display = 'flex';
+  let attempt = 0;
+  let lastError = null;
+  const maxRetries = 3;
+  const baseUrl = `${RAW_URL}?t=${Date.now()}`;
+  while (attempt <= maxRetries){
+    try{
+      setStatus(`جلب البيانات (محاولة ${attempt+1})`);
+      const text = await fetchWithTimeout(baseUrl, FETCH_TIMEOUT_MS, inFlightFetch.signal);
+      applyPayload(text);
+      lastFetchOK = true;
+      errorOverlay.classList.remove('show');
+      errorMessage.textContent = '';
+      setStatus('تم جلب البيانات بنجاح');
+      retryCount = 0;
+      loadingIndicator.style.display = 'none';
+      inFlightFetch = null;
+      lastFetchTime = nowMs();
+      return;
+    } catch(err){
+      lastError = err;
+      attempt++;
+      retryCount++;
+      setStatus(`خطأ في الاتصال (${attempt})`);
+      // backoff
+      await new Promise(res => setTimeout(res, 500 * attempt));
+      if (inFlightFetch.signal.aborted) break;
+    }
+  }
+  // failed
+  lastFetchOK = false;
+  readableLayer.innerText = "ERROR: CONNECTION LOST TO MAIN FRAME.";
+  errorOverlay.classList.add('show');
+  errorMessage.textContent = `فشل الاتصال بالخادم: ${lastError?.message || 'غير معروف'}. يرجى التحقق من اتصالك بالإنترنت أو تحديث الصفحة يدوياً.`;
+  loadingIndicator.style.display = 'none';
+  inFlightFetch = null;
+  setStatus('فشل في جلب البيانات بعد عدة محاولات');
+  // keep previous lines if any, otherwise show CONNECTION LOST
+  if (!Array.isArray(lines) || lines.length === 0) lines = ["CONNECTION LOST"];
 }
 
-const lh=fs*1.2;
-const startY=h/2-(lines.length*lh)/2+lh/2;
+/* ---------- Apply Payload ---------- */
+function applyPayload(text){
+  text = text || '';
+  // sanitize minimal
+  const safe = safeTextForMeta(text);
+  readableLayer.innerText = text;
+  lines = text.split('\n').filter(l => l.trim().length > 0);
+  document.getElementById('meta-desc')?.setAttribute('content', safe.substring(0,150));
+  document.getElementById('og-desc')?.setAttribute('content', safe.substring(0,200));
+  document.title = "MATRIX: " + (lines[0] || 'Active');
+  glitchIntensity = 18; // Trigger glitch effect
+}
 
-ctx.textAlign="center";
-ctx.textBaseline="middle";
-
-lines.forEach((line,i)=>{
-
-const y=startY+i*lh;
-const x=w/2;
-const shift=Math.max(1,fs*.015);
-
-// aberration
-ctx.fillStyle="rgba(255,0,0,.75)";
-ctx.fillText(line,x-shift,y);
-
-ctx.fillStyle="rgba(0,255,255,.75)";
-ctx.fillText(line,x+shift,y);
-
-// main
-ctx.lineWidth=fs*.06;
-ctx.strokeStyle="#000";
-ctx.fillStyle="#fff";
-
-ctx.strokeText(line,x,y);
-ctx.fillText(line,x,y);
-
+/* ---------- Image Upload Handling ---------- */
+function revokeImageObjectUrl(obj){
+  try{ if (obj && obj.objectUrl) URL.revokeObjectURL(obj.objectUrl); } catch(e){}
+}
+function clearUploadedImage(removeStored=false){
+  if (uploadedImage){
+    revokeImageObjectUrl(uploadedImage);
+  }
+  uploadedImage = null;
+  imageLoaded = false;
+  if (removeStored) {
+    localStorage.removeItem('warcore_image_data');
+    localStorage.removeItem('warcore_image_meta');
+  }
+}
+imgUploader.addEventListener('change', async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  if (file.size > IMAGE_SIZE_LIMIT_BYTES){
+    alert('حجم الصورة أكبر من الحد المسموح (10MB).');
+    return;
+  }
+  // basic type check
+  if (!file.type.startsWith('image/')){
+    alert('الملف ليس صورة صالحة.');
+    return;
+  }
+  // create object URL for immediate display; store small images in localStorage
+  const objUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    revokeImageObjectUrl(uploadedImage); // revoke previous if any
+    uploadedImage = { img, objectUrl: objUrl, storedDataUrl: null };
+    imageLoaded = true;
+    bgMode = 'image';
+    bgSelect.value = 'image';
+    setStatus('تم رفع الصورة');
+    // store if small
+    if (file.size <= MAX_IMAGE_STORE_BYTES){
+      // read as dataURL
+      const fr = new FileReader();
+      fr.onload = function(e){
+        try {
+          localStorage.setItem('warcore_image_data', e.target.result);
+          localStorage.setItem('warcore_image_meta', JSON.stringify({name:file.name,size:file.size,type:file.type,t:Date.now()}));
+        } catch(err){
+          console.warn('failed to store image in localStorage', err);
+        }
+      };
+      fr.readAsDataURL(file);
+    } else {
+      // ensure not stored
+      localStorage.removeItem('warcore_image_data');
+      localStorage.removeItem('warcore_image_meta');
+    }
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(objUrl);
+    alert('فشل تحميل الصورة.');
+    setStatus('خطأ عند تحميل الصورة');
+  };
+  img.src = objUrl;
 });
+
+/* ---------- Restore Stored Preferences ---------- */
+function restorePreferences(){
+  try{
+    const storedBg = localStorage.getItem('warcore_bg');
+    if (storedBg) { bgMode = storedBg; bgSelect.value = storedBg; }
+    const storedText = localStorage.getItem('warcore_text');
+    if (storedText) msgInput.value = storedText;
+    const storedTheme = localStorage.getItem('warcore_theme');
+    if (storedTheme) { currentTheme = storedTheme; themeSelect.value = storedTheme; applyTheme(storedTheme); }
+    const storedFont = localStorage.getItem('warcore_font');
+    if (storedFont) { currentFont = storedFont; fontSelect.value = storedFont; applyFont(storedFont); }
+
+    const imgData = localStorage.getItem('warcore_image_data');
+    if (imgData){
+      const img = new Image();
+      img.onload = () => {
+        uploadedImage = { img, objectUrl:null, storedDataUrl: imgData };
+        imageLoaded = true;
+        bgMode = 'image';
+        bgSelect.value = 'image';
+      };
+      img.onerror = () => {
+        localStorage.removeItem('warcore_image_data');
+        localStorage.removeItem('warcore_image_meta');
+      };
+      img.src = imgData;
+    }
+  } catch(e){ console.warn('restorePreferences failed', e); }
 }
 
-/* =====================
-   FETCH
-===================== */
-
-async function fetchPayload(){
-
-try{
-
-const res=await fetch(RAW_URL+"?t="+Date.now(),{cache:"no-store"});
-const txt=await res.text();
-
-lines=txt.split("\n").filter(l=>l.trim());
-
-glitch=20;
-
-}catch{
-lines=["CONNECTION LOST"];
-}
+/* ---------- Copy helpers ---------- */
+function flashCopy(button, text){
+  navigator.clipboard?.writeText(text).then(()=>{
+    const prev = button.textContent;
+    button.textContent = '✓ تم النسخ';
+    setTimeout(()=> button.textContent = prev, 1400);
+  }).catch(()=> alert('فشل النسخ'));
 }
 
-/* =====================
-   LOOP
-===================== */
-
-function render(t){
-
-const dt=t-last;
-last=t;
-
-bctx.fillStyle="#000";
-bctx.fillRect(0,0,w,h);
-
-if(bgMode==="grid")
-bctx.drawImage(grid,0,0);
-
-if(uploadedImg){
-const scale=Math.max(w/uploadedImg.width,h/uploadedImg.height);
-const dw=uploadedImg.width*scale;
-const dh=uploadedImg.height*scale;
-
-bctx.filter="grayscale(100%) brightness(60%)";
-bctx.drawImage(uploadedImg,(w-dw)/2,(h-dh)/2,dw,dh);
-bctx.filter="none";
+/* ---------- Draw Routines ---------- */
+function drawBackground(){
+  if (bgMode === 'void'){
+    // nothing (canvas cleared)
+  } else if (bgMode === 'grid'){
+    // draw gridCache with offset
+    if (gridCache){
+      // tile draw for smooth movement
+      const ox = Math.floor(gridOffset % gridCache.width);
+      ctx.save();
+      ctx.globalAlpha = 1;
+      // draw two tiles horizontally/vertically to cover shifts
+      for (let sx = -gridCache.width; sx <= w + gridCache.width; sx += gridCache.width){
+        for (let sy = -gridCache.height; sy <= h + gridCache.height; sy += gridCache.height){
+          ctx.drawImage(gridCache, sx - ox, sy);
+        }
+      }
+      ctx.restore();
+    }
+  } else if (bgMode === 'image' && uploadedImage && imageLoaded){
+    // cover fit with filters
+    const img = uploadedImage.img;
+    const iw = img.width, ih = img.height;
+    if (iw>0 && ih>0){
+      const scale = Math.max(w/iw, h/ih);
+      const dw = iw * scale, dh = ih * scale;
+      const dx = (w - dw)/2, dy = (h - dh)/2;
+      ctx.save();
+      // filter: grayscale(100%) contrast(120%) brightness(60%)
+      ctx.filter = 'grayscale(100%) contrast(120%) brightness(60%)';
+      // draw using CSS pixel coords; canvas internal already scaled via setTransform
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.filter = 'none';
+      ctx.restore();
+    }
+  }
+}
+function drawScanlines(){
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  for (let y=0;y<h;y+=4){
+    ctx.fillRect(0,y,w,1);
+  }
+  ctx.restore();
+}
+function drawNoise(){
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i=0;i<5;i++){
+    ctx.fillStyle = `rgba(255,255,255,${(Math.random()*0.03+0.01).toFixed(3)})`;
+    ctx.fillRect(Math.random()*w, Math.random()*h, 1+Math.random()*2,1+Math.random()*2);
+  }
+  ctx.restore();
 }
 
-drawMatrix(bctx);
-drawText(bctx);
+function drawText(){
+  if (!Array.isArray(lines) || lines.length===0) return;
+  // Font sizing
+  let fs = Math.min(w * 0.12, (h * 0.8) / (lines.length * 1.2));
+  ctx.font = `900 ${Math.floor(fs)}px ${FONTS[currentFont]}`;
+  // measure widest
+  let widest = 0;
+  lines.forEach(l =>{ widest = Math.max(widest, ctx.measureText(l).width); });
+  if (widest > w * 0.9){
+    fs = fs * (w * 0.9 / widest);
+  }
+  fs = Math.max(10, Math.floor(fs));
+  ctx.font = `900 ${fs}px ${FONTS[currentFont]}`;
+  const lh = fs * 1.2;
+  const totalH = lines.length * lh;
+  // Centering formula recommended:
+  const startY = (h / 2) - (totalH / 2) + (lh / 2);
 
-bctx.drawImage(scan,0,0);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-bctx.globalAlpha=.22;
-bctx.drawImage(noise,0,0,w,h);
-bctx.globalAlpha=1;
+  lines.forEach((line,i)=>{
+    const y = startY + (i * lh);
+    const x = w/2;
+    // chromatic aberration + glitch effect
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const baseShift = Math.max(1, Math.round(fs * 0.015));
+    const glitchShiftX = (Math.random() - 0.5) * glitchIntensity;
+    const glitchShiftY = (Math.random() - 0.5) * glitchIntensity;
 
-ctx.drawImage(back,0,0);
+    ctx.fillStyle = `rgba(255,0,0,${0.8 * (1 - glitchIntensity/20)})`;
+    ctx.fillText(line, x - baseShift + glitchShiftX, y + glitchShiftY);
+    ctx.fillStyle = `rgba(0,255,255,${0.8 * (1 - glitchIntensity/20)})`;
+    ctx.fillText(line, x + baseShift + glitchShiftX, y + glitchShiftY);
+    ctx.restore();
 
-raf=requestAnimationFrame(render);
+    // main white with stroke shield
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineWidth = Math.max(1, fs * 0.06);
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#fff';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.strokeText(line, x + glitchShiftX, y + glitchShiftY);
+    ctx.fillText(line, x + glitchShiftX, y + glitchShiftY);
+    ctx.restore();
+  });
 }
 
-/* =====================
-   ADMIN
-===================== */
+/* ---------- Main Render Loop ---------- */
+let lastFrameTime = nowMs();
+function renderLoop(ts){
+  const now = ts || performance.now();
+  const dt = now - lastFrameTime;
+  lastFrameTime = now;
 
-document.getElementById("secret").onclick=()=>{
-document.body.classList.toggle("admin");
+  // Control frame rate
+  if (dt < 1000 / animationFrameRate) {
+    rAFid = requestAnimationFrame(renderLoop);
+    return;
+  }
+
+  // decay glitch
+  glitchIntensity = Math.max(0, glitchIntensity * 0.92 - 0.01);
+  gridOffset += dt * 0.02;
+
+  // clear (CSS pixels)
+  ctx.save();
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,w,h);
+  ctx.restore();
+
+  drawBackground();
+  drawParticles(); // Draw particles
+  drawScanlines();
+
+  if (!lastFetchOK){
+    // big CONNECTION LOST
+    ctx.save();
+    const msg = "CONNECTION LOST";
+    const fs = Math.min(w * 0.12, h * 0.18);
+    ctx.font = `900 ${Math.floor(fs)}px ${FONTS[currentFont]}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const alpha = 0.6 + 0.4 * Math.abs(Math.sin(now/400));
+    ctx.fillStyle = `rgba(255,20,20,${alpha})`;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = Math.max(2, fs * 0.06);
+    ctx.strokeText(msg, w/2, h/2);
+    ctx.fillText(msg, w/2, h/2);
+    ctx.restore();
+  } else {
+    drawText();
+  }
+
+  drawNoise();
+
+  rAFid = requestAnimationFrame(renderLoop);
+}
+
+/* ---------- Status Indicators ---------- */
+function updateCountdown() {
+  const timeSinceLastFetch = nowMs() - lastFetchTime;
+  const timeLeft = FETCH_INTERVAL_MS - timeSinceLastFetch;
+  if (timeLeft > 0) {
+    const seconds = Math.floor((timeLeft / 1000) % 60);
+    const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+    countdownTimer.textContent = `تحديث بعد: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  } else {
+    countdownTimer.textContent = 'جاري التحديث...';
+  }
+}
+
+function updateBatteryStatus() {
+  if ('getBattery' in navigator) {
+    navigator.getBattery().then(function(battery) {
+      const level = (battery.level * 100).toFixed(0);
+      const charging = battery.charging ? '⚡' : '';
+      batteryStatus.textContent = `بطارية: ${level}% ${charging}`;
+
+      // Adjust FPS based on battery level if not charging
+      if (!battery.charging && battery.level < 0.2) { // Less than 20%
+        animationFrameRate = 30; // Reduce to 30 FPS
+      } else {
+        animationFrameRate = 60; // Restore to 60 FPS
+      }
+    });
+  } else {
+    batteryStatus.textContent = ''; // Hide if API not supported
+  }
+}
+
+/* ---------- Event Listeners & Controls ---------- */
+btnUpdate.addEventListener('click', ()=> fetchPayload(true));
+btnCopyRaw.addEventListener('click', function(){ flashCopy(this, RAW_URL); });
+btnCopyLink.addEventListener('click', function(){ flashCopy(this, window.location.href); });
+btnClearImage.addEventListener('click', ()=> { if (confirm('مسح الصورة المرفوعة؟')) { clearUploadedImage(true); }});
+btnClearAll.addEventListener('click', ()=> {
+  if (!confirm('هل تريد مسح كل البيانات المحفوظة (الخلفية، الصورة، النص، السمة، الخط)؟')) return;
+  try {
+    localStorage.removeItem('warcore_bg');
+    localStorage.removeItem('warcore_text');
+    localStorage.removeItem('warcore_image_data');
+    localStorage.removeItem('warcore_image_meta');
+    localStorage.removeItem('warcore_theme');
+    localStorage.removeItem('warcore_font');
+  } catch(e){}
+  clearUploadedImage(true);
+  msgInput.value = '';
+  bgMode = 'void';
+  bgSelect.value = 'void';
+  currentTheme = 'red';
+  themeSelect.value = 'red';
+  applyTheme('red');
+  currentFont = 'orbitron';
+  fontSelect.value = 'orbitron';
+  applyFont('orbitron');
+  setStatus('تم مسح البيانات');
+});
+
+bgSelect.addEventListener('change', (e)=> {
+  bgMode = e.target.value;
+  try{ localStorage.setItem('warcore_bg', bgMode); } catch(e){}
+});
+
+themeSelect.addEventListener('change', (e)=> {
+  applyTheme(e.target.value);
+});
+
+fontSelect.addEventListener('change', (e)=> {
+  applyFont(e.target.value);
+});
+
+msgInput.addEventListener('input', (e)=> {
+  try{ localStorage.setItem('warcore_text', e.target.value); } catch(e){}
+});
+
+secretTrigger.addEventListener('click', ()=> {
+  document.body.classList.toggle('admin-mode');
+  const isAdmin = document.body.classList.contains('admin-mode');
+  document.getElementById('ui-layer').setAttribute('aria-hidden', (!isAdmin).toString());
+});
+
+btnRetryFetch.addEventListener('click', () => {
+  errorOverlay.classList.remove('show');
+  fetchPayload(true);
+});
+
+// keyboard shortcut Ctrl+Shift+A
+document.addEventListener('keydown', (ev)=>{
+  if (ev.ctrlKey && ev.shiftKey && (ev.key==='A' || ev.key==='a')) {
+    ev.preventDefault();
+    document.body.classList.toggle('admin-mode');
+    const isAdmin = document.body.classList.contains('admin-mode');
+    document.getElementById('ui-layer').setAttribute('aria-hidden', (!isAdmin).toString());
+  }
+});
+
+window.addEventListener('resize', resizeCanvasDebounced);
+
+/* ---------- Lifecycle & Init ---------- */
+function start(){
+  if (inited) return;
+  inited = true;
+  initContext();
+  resizeCanvas();
+  rebuildGridCache();
+  initParticles(); // Initialize particles
+  restorePreferences();
+  // initial fetch and schedule
+  fetchPayload(false);
+  fetchTimerId = setInterval(()=> fetchPayload(false), FETCH_INTERVAL_MS);
+  // Start status updates
+  setInterval(updateCountdown, 1000);
+  updateBatteryStatus(); // Initial check
+  setInterval(updateBatteryStatus, 5000); // Update every 5 seconds
+  // start render
+  rAFid = requestAnimationFrame(renderLoop);
+  // show loading briefly
+  loadingIndicator.style.display = 'none';
+  setStatus('جاهز');
+}
+function stop(){
+  try{ if (inFlightFetch) inFlightFetch.abort(); } catch(e){}
+  if (rAFid) cancelAnimationFrame(rAFid);
+  if (fetchTimerId) clearInterval(fetchTimerId);
+  revokeImageObjectUrl(uploadedImage);
+}
+window.addEventListener('beforeunload', stop);
+start();
+
+/* ---------- Expose small API for debugging ---------- */
+window.WARCORE = {
+  fetchPayload,
+  setBackground(mode){ if (['void','grid','image'].includes(mode)){ bgMode=mode; bgSelect.value=mode; try{ localStorage.setItem('warcore_bg', bgMode);}catch(e){} } },
+  setTheme(theme){ if (THEMES[theme]){ applyTheme(theme); themeSelect.value=theme; } },
+  setFont(font){ if (FONTS[font]){ applyFont(font); fontSelect.value=font; } },
+  clearImage: ()=> clearUploadedImage(true),
+  getState: ()=> ({bgMode, imageLoaded, lastFetchOK, linesCount: lines.length, currentTheme, currentFont})
 };
+</script>
+<script>
+// service-worker.js content (will be saved as a separate file)
+const CACHE_NAME = 'warcore-cache-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/style.css', // If you extract CSS later
+  '/script.js'  // If you extract JS later
+  // Add other static assets here
+];
 
-document.getElementById("fetch").onclick=fetchPayload;
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
 
-document.getElementById("msg").oninput=e=>{
-lines=e.target.value.split("\n");
-};
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+        return fetch(event.request).then(
+          function(response) {
+            // Check if we received a valid response
+            if(!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
 
-document.getElementById("gridBtn").onclick=()=>bgMode="grid";
-document.getElementById("voidBtn").onclick=()=>bgMode="void";
+            // IMPORTANT: Clone the response. A response is a stream
+            // and can only be consumed once. We consume it once to cache it,
+            // and once the browser consumes it as well.
+            var responseToCache = response.clone();
 
-document.getElementById("img").onchange=e=>{
-const file=e.target.files[0];
-if(!file) return;
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
 
-const img=new Image();
-img.onload=()=>uploadedImg=img;
-img.src=URL.createObjectURL(file);
-};
+            return response;
+          }
+        );
+      })
+    );
+});
 
-/* =====================
-   HELPERS
-===================== */
-
-function debounce(fn,ms){
-let t;
-return(...a)=>{
-clearTimeout(t);
-t=setTimeout(()=>fn(...a),ms);
-};
-}
-
-/* =====================
-   START
-===================== */
-
-resize();
-fetchPayload();
-raf=requestAnimationFrame(render);
-
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
 </script>
 </body>
 </html>
