@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WAR-CORE V20 [Ultima]</title>
+
+<style>
+html,body{
+margin:0;
+height:100%;
+background:#000;
+overflow:hidden;
+font-family:system-ui;
+}
+canvas{display:block}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<script>
+"use strict";
+
+/* ===========================
+   CONFIG
+=========================== */
+
+const RAW_URL = "https://gist.githubusercontent.com/tombad8900/02c19d224a9d2cafc91bf918c81e27a6/raw/";
+const DPR_MAX = 2;
+const FETCH_TIMEOUT = 15000;
+
+/* ===========================
+   CANVAS
+=========================== */
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d",{alpha:false,desynchronized:true}) 
+        || canvas.getContext("2d");
+
+let w=0,h=0,dpr=1;
+
+function resize(){
+
+dpr = Math.min(window.devicePixelRatio||1, DPR_MAX);
+
+w = innerWidth;
+h = innerHeight;
+
+canvas.width = w*dpr;
+canvas.height = h*dpr;
+
+canvas.style.width = w+"px";
+canvas.style.height = h+"px";
+
+ctx.setTransform(dpr,0,0,dpr,0,0);
+
+buildGrid();
+buildScanlines();
+initDrops();
+}
+
+window.addEventListener("resize", debounce(resize,120));
+
+/* ===========================
+   OFFSCREEN BUFFERS
+=========================== */
+
+let gridCanvas,scanCanvas,noiseCanvas,tearCanvas;
+let gridCtx,scanCtx,noiseCtx,tearCtx;
+
+function buildGrid(){
+
+gridCanvas = document.createElement("canvas");
+gridCanvas.width=w;
+gridCanvas.height=h;
+gridCtx = gridCanvas.getContext("2d");
+
+const spacing = 40;
+
+gridCtx.strokeStyle="rgba(0,255,120,0.05)";
+
+for(let x=0;x<w;x+=spacing){
+gridCtx.beginPath();
+gridCtx.moveTo(x,0);
+gridCtx.lineTo(x,h);
+gridCtx.stroke();
+}
+
+for(let y=0;y<h;y+=spacing){
+gridCtx.beginPath();
+gridCtx.moveTo(0,y);
+gridCtx.lineTo(w,y);
+gridCtx.stroke();
+}
+}
+
+function buildScanlines(){
+
+scanCanvas=document.createElement("canvas");
+scanCanvas.width=w;
+scanCanvas.height=h;
+scanCtx=scanCanvas.getContext("2d");
+
+scanCtx.fillStyle="rgba(0,0,0,0.08)";
+
+for(let y=0;y<h;y+=4){
+scanCtx.fillRect(0,y,w,1);
+}
+}
+
+function buildNoise(){
+
+noiseCanvas=document.createElement("canvas");
+noiseCanvas.width=200;
+noiseCanvas.height=200;
+noiseCtx=noiseCanvas.getContext("2d");
+
+const img=noiseCtx.createImageData(200,200);
+
+for(let i=0;i<img.data.length;i+=4){
+const v=Math.random()*255;
+img.data[i]=v;
+img.data[i+1]=v;
+img.data[i+2]=v;
+img.data[i+3]=15;
+}
+
+noiseCtx.putImageData(img,0,0);
+}
+
+tearCanvas=document.createElement("canvas");
+tearCtx=tearCanvas.getContext("2d");
+
+/* ===========================
+   FETCH
+=========================== */
+
+let lines=["INITIALIZING..."];
+let glitch=0;
+let lastFetchOK=true;
+
+async function fetchPayload(){
+
+const controller=new AbortController();
+const id=setTimeout(()=>controller.abort(),FETCH_TIMEOUT);
+
+try{
+
+const res=await fetch(`${RAW_URL}?t=${Date.now()}`,{
+cache:"no-store",
+signal:controller.signal
+});
+
+clearTimeout(id);
+
+if(!res.ok) throw "network";
+
+const text=await res.text();
+
+lines=text.split("\n").filter(Boolean);
+
+glitch=20;
+lastFetchOK=true;
+
+}catch{
+
+lastFetchOK=false;
+lines=["CONNECTION LOST"];
+}
+
+}
+
+setInterval(fetchPayload,600000);
+fetchPayload();
+
+/* ===========================
+   MATRIX
+=========================== */
+
+let drops=[];
+
+function initDrops(){
+
+drops=[];
+const font=16;
+
+for(let i=0;i<w/font;i++){
+drops[i]=Math.random()*-h;
+}
+}
+
+function drawMatrix(){
+
+const font=16+glitch;
+ctx.font=`${font}px monospace`;
+
+ctx.fillStyle=`rgba(0,${180+glitch*3},0,.8)`;
+
+for(let i=0;i<drops.length;i++){
+
+const x=i*font;
+const y=drops[i]*font;
+
+ctx.fillText(Math.random()>0.5?"0":"1",x,y);
+
+if(y>h && Math.random()>0.975)
+drops[i]=0;
+
+drops[i]+=0.8+glitch*.2;
+}
+}
+
+/* ===========================
+   TEXT
+=========================== */
+
+function drawText(){
+
+const totalHeight = lines.length*42;
+let y = h/2 - totalHeight/2;
+
+ctx.textAlign="center";
+ctx.textBaseline="middle";
+ctx.font="700 32px system-ui";
+
+for(const line of lines){
+
+ctx.fillStyle="#fff";
+ctx.fillText(line,w/2,y);
+
+const shift = Math.max(1,32*0.015);
+
+ctx.fillStyle="rgba(255,0,0,.35)";
+ctx.fillText(line,w/2+shift,y);
+
+ctx.fillStyle="rgba(0,120,255,.35)";
+ctx.fillText(line,w/2-shift,y);
+
+y+=42;
+}
+}
+
+/* ===========================
+   UPDATE / RENDER
+=========================== */
+
+let last=performance.now();
+let raf;
+
+function update(dt){
+
+glitch=Math.max(0,glitch*0.92-0.02);
+}
+
+function render(){
+
+ctx.fillStyle="#000";
+ctx.fillRect(0,0,w,h);
+
+ctx.drawImage(gridCanvas,0,0);
+
+drawMatrix();
+drawText();
+
+ctx.drawImage(scanCanvas,0,0);
+
+ctx.globalAlpha=.25;
+ctx.drawImage(noiseCanvas,0,0,w,h);
+ctx.globalAlpha=1;
+
+horizontalTear();
+pulse();
+}
+
+function loop(t){
+
+const dt=t-last;
+last=t;
+
+update(dt);
+render();
+
+raf=requestAnimationFrame(loop);
+}
+
+/* ===========================
+   FX
+=========================== */
+
+function horizontalTear(){
+
+if(glitch<8 || Math.random()>.06) return;
+
+const y=Math.random()*h;
+const th=6+Math.random()*10;
+const off=(Math.random()-.5)*40;
+
+tearCanvas.width=w;
+tearCanvas.height=th;
+
+tearCtx.drawImage(canvas,0,y,w,th,0,0,w,th);
+ctx.drawImage(tearCanvas,0,0,w,th,off,y,w,th);
+}
+
+function pulse(){
+
+const p=1+Math.sin(performance.now()/900)*0.006;
+
+ctx.save();
+ctx.translate(w*(1-p)/2,h*(1-p)/2);
+ctx.scale(p,p);
+ctx.restore();
+}
+
+/* ===========================
+   VISIBILITY PAUSE
+=========================== */
+
+document.addEventListener("visibilitychange",()=>{
+
+if(document.hidden){
+cancelAnimationFrame(raf);
+}else{
+last=performance.now();
+raf=requestAnimationFrame(loop);
+}
+});
+
+/* ===========================
+   HELPERS
+=========================== */
+
+function debounce(fn,ms){
+let t;
+return (...a)=>{
+clearTimeout(t);
+t=setTimeout(()=>fn(...a),ms);
+};
+}
+
+/* ===========================
+   START
+=========================== */
+
+buildNoise();
+resize();
+raf=requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
