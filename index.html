@@ -2,8 +2,9 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>WAR-CORE V20 [Ultima]</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+
+<title>WAR-CORE ULTIMATE</title>
 
 <style>
 html,body{
@@ -13,340 +14,386 @@ background:#000;
 overflow:hidden;
 font-family:system-ui;
 }
+
 canvas{display:block}
+
+/* admin */
+#panel{
+position:fixed;
+top:0;
+left:0;
+right:0;
+background:#050505ee;
+border-bottom:2px solid #600;
+padding:10px;
+transform:translateY(-110%);
+transition:.25s;
+z-index:9999;
+}
+
+body.admin #panel{
+transform:translateY(0);
+}
+
+textarea{
+width:60%;
+height:80px;
+background:#000;
+color:#fff;
+border:1px solid #222;
+}
+
+button{
+background:#111;
+color:#fff;
+border:1px solid #333;
+padding:8px;
+cursor:pointer;
+}
+
+#secret{
+position:fixed;
+bottom:0;
+left:0;
+width:50px;
+height:50px;
+}
 </style>
 </head>
 <body>
+
+<div id="panel">
+<textarea id="msg"></textarea>
+<button id="fetch">FETCH</button>
+<button id="gridBtn">GRID</button>
+<button id="voidBtn">VOID</button>
+<input type="file" id="img">
+</div>
+
+<div id="secret"></div>
 
 <canvas id="c"></canvas>
 
 <script>
 "use strict";
 
-/* ===========================
-   CONFIG
-=========================== */
+/* =====================
+   CONSTANTS
+===================== */
 
-const RAW_URL = "https://gist.githubusercontent.com/tombad8900/02c19d224a9d2cafc91bf918c81e27a6/raw/";
-const DPR_MAX = 2;
-const FETCH_TIMEOUT = 15000;
+const RAW_URL="https://gist.githubusercontent.com/tombad8900/02c19d224a9d2cafc91bf918c81e27a6/raw/";
+const DPR_MAX=2;
 
-/* ===========================
-   CANVAS
-=========================== */
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d",{alpha:false,desynchronized:true}) || canvas.getContext("2d");
 
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d",{alpha:false,desynchronized:true}) 
-        || canvas.getContext("2d");
+let back=document.createElement("canvas");
+let bctx=back.getContext("2d");
+
+/* =====================
+   STATE
+===================== */
 
 let w=0,h=0,dpr=1;
 
+let grid,scan,noise;
+let matrixDrops=[];
+let lines=["WAR-CORE ACTIVE"];
+
+let bgMode="grid";
+let uploadedImg=null;
+
+let glitch=0;
+let raf;
+let last=performance.now();
+
+/* =====================
+   RESIZE
+===================== */
+
 function resize(){
 
-dpr = Math.min(window.devicePixelRatio||1, DPR_MAX);
+dpr=Math.min(devicePixelRatio||1,DPR_MAX);
 
-w = innerWidth;
-h = innerHeight;
+w=innerWidth;
+h=innerHeight;
 
-canvas.width = w*dpr;
-canvas.height = h*dpr;
+canvas.width=w*dpr;
+canvas.height=h*dpr;
 
-canvas.style.width = w+"px";
-canvas.style.height = h+"px";
+canvas.style.width=w+"px";
+canvas.style.height=h+"px";
+
+back.width=w;
+back.height=h;
 
 ctx.setTransform(dpr,0,0,dpr,0,0);
 
 buildGrid();
-buildScanlines();
-initDrops();
+buildScan();
+buildNoise();
+initMatrix();
 }
 
-window.addEventListener("resize", debounce(resize,120));
+addEventListener("resize",debounce(resize,120));
 
-/* ===========================
-   OFFSCREEN BUFFERS
-=========================== */
-
-let gridCanvas,scanCanvas,noiseCanvas,tearCanvas;
-let gridCtx,scanCtx,noiseCtx,tearCtx;
+/* =====================
+   CACHES
+===================== */
 
 function buildGrid(){
 
-gridCanvas = document.createElement("canvas");
-gridCanvas.width=w;
-gridCanvas.height=h;
-gridCtx = gridCanvas.getContext("2d");
+grid=document.createElement("canvas");
+grid.width=w;
+grid.height=h;
 
-const spacing = 40;
+const g=grid.getContext("2d");
 
-gridCtx.strokeStyle="rgba(0,255,120,0.05)";
+const spacing=Math.max(20,Math.min(w,h)*0.04);
+
+g.strokeStyle="rgba(0,255,120,.05)";
 
 for(let x=0;x<w;x+=spacing){
-gridCtx.beginPath();
-gridCtx.moveTo(x,0);
-gridCtx.lineTo(x,h);
-gridCtx.stroke();
+g.beginPath();
+g.moveTo(x,0);
+g.lineTo(x,h);
+g.stroke();
 }
 
 for(let y=0;y<h;y+=spacing){
-gridCtx.beginPath();
-gridCtx.moveTo(0,y);
-gridCtx.lineTo(w,y);
-gridCtx.stroke();
+g.beginPath();
+g.moveTo(0,y);
+g.lineTo(w,y);
+g.stroke();
 }
 }
 
-function buildScanlines(){
+function buildScan(){
 
-scanCanvas=document.createElement("canvas");
-scanCanvas.width=w;
-scanCanvas.height=h;
-scanCtx=scanCanvas.getContext("2d");
+scan=document.createElement("canvas");
+scan.width=w;
+scan.height=h;
 
-scanCtx.fillStyle="rgba(0,0,0,0.08)";
+const s=scan.getContext("2d");
+
+s.fillStyle="rgba(0,0,0,.08)";
 
 for(let y=0;y<h;y+=4){
-scanCtx.fillRect(0,y,w,1);
+s.fillRect(0,y,w,1);
 }
 }
 
 function buildNoise(){
 
-noiseCanvas=document.createElement("canvas");
-noiseCanvas.width=200;
-noiseCanvas.height=200;
-noiseCtx=noiseCanvas.getContext("2d");
+noise=document.createElement("canvas");
+noise.width=220;
+noise.height=220;
 
-const img=noiseCtx.createImageData(200,200);
+const n=noise.getContext("2d");
+const img=n.createImageData(220,220);
 
 for(let i=0;i<img.data.length;i+=4){
 const v=Math.random()*255;
 img.data[i]=v;
 img.data[i+1]=v;
 img.data[i+2]=v;
-img.data[i+3]=15;
+img.data[i+3]=12;
 }
 
-noiseCtx.putImageData(img,0,0);
+n.putImageData(img,0,0);
 }
 
-tearCanvas=document.createElement("canvas");
-tearCtx=tearCanvas.getContext("2d");
-
-/* ===========================
-   FETCH
-=========================== */
-
-let lines=["INITIALIZING..."];
-let glitch=0;
-let lastFetchOK=true;
-
-async function fetchPayload(){
-
-const controller=new AbortController();
-const id=setTimeout(()=>controller.abort(),FETCH_TIMEOUT);
-
-try{
-
-const res=await fetch(`${RAW_URL}?t=${Date.now()}`,{
-cache:"no-store",
-signal:controller.signal
-});
-
-clearTimeout(id);
-
-if(!res.ok) throw "network";
-
-const text=await res.text();
-
-lines=text.split("\n").filter(Boolean);
-
-glitch=20;
-lastFetchOK=true;
-
-}catch{
-
-lastFetchOK=false;
-lines=["CONNECTION LOST"];
-}
-
-}
-
-setInterval(fetchPayload,600000);
-fetchPayload();
-
-/* ===========================
+/* =====================
    MATRIX
-=========================== */
+===================== */
 
-let drops=[];
+function initMatrix(){
 
-function initDrops(){
+matrixDrops=[];
 
-drops=[];
 const font=16;
 
 for(let i=0;i<w/font;i++){
-drops[i]=Math.random()*-h;
+matrixDrops[i]=Math.random()*-h;
 }
 }
 
-function drawMatrix(){
+function drawMatrix(ctx){
 
-const font=16+glitch;
+const font=16;
 ctx.font=`${font}px monospace`;
+ctx.fillStyle="rgba(0,200,0,.75)";
 
-ctx.fillStyle=`rgba(0,${180+glitch*3},0,.8)`;
-
-for(let i=0;i<drops.length;i++){
+for(let i=0;i<matrixDrops.length;i++){
 
 const x=i*font;
-const y=drops[i]*font;
+const y=matrixDrops[i];
 
-ctx.fillText(Math.random()>0.5?"0":"1",x,y);
+ctx.fillText(Math.random()>.5?"0":"1",x,y);
 
-if(y>h && Math.random()>0.975)
-drops[i]=0;
+if(y>h && Math.random()>.975)
+matrixDrops[i]=0;
 
-drops[i]+=0.8+glitch*.2;
+matrixDrops[i]+=1.2;
 }
 }
 
-/* ===========================
+/* =====================
    TEXT
-=========================== */
+===================== */
 
-function drawText(){
+function drawText(ctx){
 
-const totalHeight = lines.length*42;
-let y = h/2 - totalHeight/2;
+if(!lines.length) return;
+
+let fs=Math.min(w*.12,(h*.8)/(lines.length*1.2));
+ctx.font=`900 ${Math.floor(fs)}px system-ui`;
+
+let widest=0;
+
+for(const l of lines){
+widest=Math.max(widest,ctx.measureText(l).width);
+}
+
+if(widest>w*.9){
+fs*=w*.9/widest;
+ctx.font=`900 ${Math.floor(fs)}px system-ui`;
+}
+
+const lh=fs*1.2;
+const startY=h/2-(lines.length*lh)/2+lh/2;
 
 ctx.textAlign="center";
 ctx.textBaseline="middle";
-ctx.font="700 32px system-ui";
 
-for(const line of lines){
+lines.forEach((line,i)=>{
 
+const y=startY+i*lh;
+const x=w/2;
+const shift=Math.max(1,fs*.015);
+
+// aberration
+ctx.fillStyle="rgba(255,0,0,.75)";
+ctx.fillText(line,x-shift,y);
+
+ctx.fillStyle="rgba(0,255,255,.75)";
+ctx.fillText(line,x+shift,y);
+
+// main
+ctx.lineWidth=fs*.06;
+ctx.strokeStyle="#000";
 ctx.fillStyle="#fff";
-ctx.fillText(line,w/2,y);
 
-const shift = Math.max(1,32*0.015);
+ctx.strokeText(line,x,y);
+ctx.fillText(line,x,y);
 
-ctx.fillStyle="rgba(255,0,0,.35)";
-ctx.fillText(line,w/2+shift,y);
+});
+}
 
-ctx.fillStyle="rgba(0,120,255,.35)";
-ctx.fillText(line,w/2-shift,y);
+/* =====================
+   FETCH
+===================== */
 
-y+=42;
+async function fetchPayload(){
+
+try{
+
+const res=await fetch(RAW_URL+"?t="+Date.now(),{cache:"no-store"});
+const txt=await res.text();
+
+lines=txt.split("\n").filter(l=>l.trim());
+
+glitch=20;
+
+}catch{
+lines=["CONNECTION LOST"];
 }
 }
 
-/* ===========================
-   UPDATE / RENDER
-=========================== */
+/* =====================
+   LOOP
+===================== */
 
-let last=performance.now();
-let raf;
-
-function update(dt){
-
-glitch=Math.max(0,glitch*0.92-0.02);
-}
-
-function render(){
-
-ctx.fillStyle="#000";
-ctx.fillRect(0,0,w,h);
-
-ctx.drawImage(gridCanvas,0,0);
-
-drawMatrix();
-drawText();
-
-ctx.drawImage(scanCanvas,0,0);
-
-ctx.globalAlpha=.25;
-ctx.drawImage(noiseCanvas,0,0,w,h);
-ctx.globalAlpha=1;
-
-horizontalTear();
-pulse();
-}
-
-function loop(t){
+function render(t){
 
 const dt=t-last;
 last=t;
 
-update(dt);
-render();
+bctx.fillStyle="#000";
+bctx.fillRect(0,0,w,h);
 
-raf=requestAnimationFrame(loop);
+if(bgMode==="grid")
+bctx.drawImage(grid,0,0);
+
+if(uploadedImg){
+const scale=Math.max(w/uploadedImg.width,h/uploadedImg.height);
+const dw=uploadedImg.width*scale;
+const dh=uploadedImg.height*scale;
+
+bctx.filter="grayscale(100%) brightness(60%)";
+bctx.drawImage(uploadedImg,(w-dw)/2,(h-dh)/2,dw,dh);
+bctx.filter="none";
 }
 
-/* ===========================
-   FX
-=========================== */
+drawMatrix(bctx);
+drawText(bctx);
 
-function horizontalTear(){
+bctx.drawImage(scan,0,0);
 
-if(glitch<8 || Math.random()>.06) return;
+bctx.globalAlpha=.22;
+bctx.drawImage(noise,0,0,w,h);
+bctx.globalAlpha=1;
 
-const y=Math.random()*h;
-const th=6+Math.random()*10;
-const off=(Math.random()-.5)*40;
+ctx.drawImage(back,0,0);
 
-tearCanvas.width=w;
-tearCanvas.height=th;
-
-tearCtx.drawImage(canvas,0,y,w,th,0,0,w,th);
-ctx.drawImage(tearCanvas,0,0,w,th,off,y,w,th);
+raf=requestAnimationFrame(render);
 }
 
-function pulse(){
+/* =====================
+   ADMIN
+===================== */
 
-const p=1+Math.sin(performance.now()/900)*0.006;
+document.getElementById("secret").onclick=()=>{
+document.body.classList.toggle("admin");
+};
 
-ctx.save();
-ctx.translate(w*(1-p)/2,h*(1-p)/2);
-ctx.scale(p,p);
-ctx.restore();
-}
+document.getElementById("fetch").onclick=fetchPayload;
 
-/* ===========================
-   VISIBILITY PAUSE
-=========================== */
+document.getElementById("msg").oninput=e=>{
+lines=e.target.value.split("\n");
+};
 
-document.addEventListener("visibilitychange",()=>{
+document.getElementById("gridBtn").onclick=()=>bgMode="grid";
+document.getElementById("voidBtn").onclick=()=>bgMode="void";
 
-if(document.hidden){
-cancelAnimationFrame(raf);
-}else{
-last=performance.now();
-raf=requestAnimationFrame(loop);
-}
-});
+document.getElementById("img").onchange=e=>{
+const file=e.target.files[0];
+if(!file) return;
 
-/* ===========================
+const img=new Image();
+img.onload=()=>uploadedImg=img;
+img.src=URL.createObjectURL(file);
+};
+
+/* =====================
    HELPERS
-=========================== */
+===================== */
 
 function debounce(fn,ms){
 let t;
-return (...a)=>{
+return(...a)=>{
 clearTimeout(t);
 t=setTimeout(()=>fn(...a),ms);
 };
 }
 
-/* ===========================
+/* =====================
    START
-=========================== */
+===================== */
 
-buildNoise();
 resize();
-raf=requestAnimationFrame(loop);
+fetchPayload();
+raf=requestAnimationFrame(render);
 
 </script>
 </body>
